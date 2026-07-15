@@ -1,0 +1,3248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JARVIS // Neural Interface & Second Brain</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- CDN Packages: Marked (Markdown) and Canvas-Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    
+    <!-- CSS Icons (FontAwesome or Google material icons fallback) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+      /* HUD CYBERNETIC VARIABLES */
+      :root {
+        --bg-dark: #02050f;
+        --bg-panel: rgba(8, 16, 32, 0.65);
+        --primary-cyan: #00f0ff;
+        --primary-glow: rgba(0, 240, 255, 0.25);
+        --secondary-blue: #0072ff;
+        --accent-orange: #ff7b00;
+        --accent-glow: rgba(255, 123, 0, 0.3);
+        --text-main: #e2f1f8;
+        --text-dim: #8faec4;
+        --border-cyan: rgba(0, 240, 255, 0.18);
+        --border-cyan-active: rgba(0, 240, 255, 0.7);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg-dark);
+        background-image: 
+          linear-gradient(rgba(0, 240, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 240, 255, 0.015) 1px, transparent 1px);
+        background-size: 45px 45px;
+        background-position: center;
+        color: var(--text-main);
+        font-family: 'Outfit', sans-serif;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        position: relative;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Scanlines overlay */
+      body::before {
+        content: " ";
+        display: block;
+        position: absolute;
+        top: 0; left: 0; bottom: 0; right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+        z-index: 9999;
+        background-size: 100% 3px, 3px 100%;
+        pointer-events: none;
+        opacity: 0.35;
+      }
+
+      body::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(circle, transparent 40%, rgba(2, 5, 15, 0.9) 95%);
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      /* Custom scrollbars */
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: rgba(8, 16, 32, 0.15);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(0, 240, 255, 0.35);
+        border-radius: 4px;
+        box-shadow: 0 0 4px var(--primary-glow);
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--accent-orange);
+      }
+
+      /* Layout */
+      .app-container {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 16px;
+      }
+
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-b: 1px solid rgba(0, 240, 255, 0.3);
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+        user-select: none;
+      }
+
+      .header-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 4px;
+        background: rgba(0, 240, 255, 0.1);
+        border: 1px solid var(--primary-cyan);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: var(--primary-cyan);
+        animation: pulse-logo 2s infinite ease-in-out;
+      }
+
+      .header-title h1 {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+        text-shadow: 0 0 8px var(--primary-glow);
+        color: #ffffff;
+      }
+
+      .header-title p {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        color: rgba(0, 240, 255, 0.7);
+        margin-top: 2px;
+      }
+
+      .header-clocks {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .clock-block {
+        text-align: right;
+      }
+
+      .clock-label {
+        font-size: 8px;
+        color: var(--text-dim);
+        letter-spacing: 0.1em;
+      }
+
+      .clock-val {
+        font-size: 0.8rem;
+        color: #ffffff;
+      }
+
+      .clock-val.cyan {
+        color: var(--primary-cyan);
+        text-shadow: 0 0 6px var(--primary-glow);
+        font-weight: 600;
+      }
+
+      /* ----------------------------------------------------
+         HUD Telemetry Gauges Section
+         ---------------------------------------------------- */
+      .telemetry-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+
+      .cyber-panel {
+        background: var(--bg-panel);
+        border: 1px solid var(--border-cyan);
+        border-radius: 6px;
+        padding: 14px;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0, 240, 255, 0.02);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+
+      .cyber-panel::after {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 1.5px;
+        background: linear-gradient(90deg, transparent, var(--primary-cyan), transparent);
+        animation: scanline-glow 4s infinite linear;
+      }
+
+      .cyber-panel:hover {
+        border-color: rgba(0, 240, 255, 0.3);
+      }
+
+      .corner-bracket {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-color: var(--primary-cyan);
+        border-style: solid;
+        pointer-events: none;
+      }
+      .corner-bracket-tl { top: 5px; left: 5px; border-width: 1.5px 0 0 1.5px; }
+      .corner-bracket-tr { top: 5px; right: 5px; border-width: 1.5px 1.5px 0 0; }
+      .corner-bracket-bl { bottom: 5px; left: 5px; border-width: 0 0 1.5px 1.5px; }
+      .corner-bracket-br { bottom: 5px; right: 5px; border-width: 0 1.5px 1.5px 0; }
+
+      .gauge-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .gauge-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--primary-cyan);
+        text-shadow: 0 0 5px var(--primary-glow);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .gauge-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--primary-cyan);
+      }
+
+      .gauge-bar-outer {
+        height: 6px;
+        background: rgba(5, 10, 25, 0.8);
+        border: 1px solid rgba(0, 240, 255, 0.2);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-top: 6px;
+      }
+
+      .gauge-bar-inner {
+        height: 100%;
+        background: var(--primary-cyan);
+        box-shadow: 0 0 8px var(--primary-cyan);
+        width: 0%;
+        transition: width 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+
+      .telemetry-meta {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-dim);
+        line-height: 1.5;
+        margin-top: 6px;
+      }
+
+      .telemetry-meta span {
+        color: #ffffff;
+      }
+
+      /* Console Ticker logs */
+      .console-panel {
+        grid-column: 1 / -1;
+        height: 90px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .console-header {
+        border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+        padding-bottom: 4px;
+        margin-bottom: 6px;
+        font-size: 9px;
+        color: var(--primary-cyan);
+        font-family: 'Orbitron', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .console-logs {
+        flex: 1;
+        overflow-y: auto;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        color: var(--primary-cyan);
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 4px;
+      }
+
+      .console-logs div {
+        opacity: 0.6;
+      }
+
+      .console-logs div:first-child {
+        opacity: 1;
+        color: #ffffff;
+        text-shadow: 0 0 4px var(--primary-glow);
+        animation: pulse-opacity 1s infinite alternate;
+      }
+
+      /* ----------------------------------------------------
+         HUD Workspace Tabs Selector
+         ---------------------------------------------------- */
+      .tabs-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+        padding-bottom: 12px;
+        user-select: none;
+      }
+
+      .cyber-button {
+        background: rgba(0, 240, 255, 0.04);
+        border: 1px solid var(--border-cyan);
+        color: var(--primary-cyan);
+        padding: 6px 14px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .cyber-button:hover {
+        background: rgba(0, 240, 255, 0.15);
+        box-shadow: 0 0 10px var(--primary-glow);
+        border-color: var(--primary-cyan);
+      }
+
+      .cyber-button:active {
+        transform: scale(0.97);
+      }
+
+      .cyber-button.active {
+        background: var(--primary-cyan);
+        color: var(--bg-dark);
+        box-shadow: 0 0 14px var(--primary-glow-heavy);
+        border-color: var(--primary-cyan);
+        font-weight: 700;
+      }
+
+      .cyber-button.accent {
+        background: rgba(255, 123, 0, 0.04);
+        border-color: var(--border-orange);
+        color: var(--accent-orange);
+      }
+
+      .cyber-button.accent:hover {
+        background: rgba(255, 123, 0, 0.15);
+        box-shadow: 0 0 10px var(--accent-glow);
+        border-color: var(--accent-orange);
+      }
+
+      .cyber-button.accent.active {
+        background: var(--accent-orange);
+        color: var(--bg-dark);
+        box-shadow: 0 0 14px var(--accent-glow);
+        border-color: var(--accent-orange);
+        font-weight: 700;
+      }
+
+      /* Workspaces panels container */
+      .workspaces-container {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+      }
+
+      .workspace-tab {
+        display: none;
+        height: 100%;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        animation: fade-in 0.4s ease;
+      }
+
+      .workspace-tab.active {
+        display: grid;
+      }
+
+      /* ----------------------------------------------------
+         TAB 1: NEURAL CORE (CHAT)
+         ---------------------------------------------------- */
+      .chat-grid {
+        grid-template-columns: 2fr 1fr;
+      }
+
+      @media (max-width: 1024px) {
+        .chat-grid {
+          grid-template-columns: 1fr;
+        }
+        .upload-sidebar {
+          display: none !important;
+        }
+      }
+
+      .chat-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-height: 480px;
+      }
+
+      .chat-header {
+        border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .chat-header-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--primary-cyan);
+      }
+
+      .voice-circle-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+        padding-bottom: 14px;
+        margin-bottom: 14px;
+      }
+
+      .voice-btn-outer {
+        position: relative;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .voice-ring {
+        position: absolute;
+        border-radius: 50%;
+        border: 2px solid var(--primary-cyan);
+        box-shadow: 0 0 10px var(--primary-glow);
+        pointer-events: none;
+        width: 50px;
+        height: 50px;
+      }
+
+      .voice-ring-2 {
+        width: 65px; height: 65px; opacity: 0.5;
+        animation: pulse-ring 2.5s infinite linear;
+      }
+
+      .voice-ring-3 {
+        width: 80px; height: 80px; opacity: 0.2;
+        animation: pulse-ring 3.5s infinite linear;
+      }
+
+      .voice-btn {
+        z-index: 10;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(0, 240, 255, 0.1);
+        border: 1px solid var(--primary-cyan);
+        color: var(--primary-cyan);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 1.1rem;
+        box-shadow: 0 0 8px var(--primary-glow);
+        transition: all 0.2s ease;
+      }
+
+      .voice-btn:hover {
+        background: rgba(0, 240, 255, 0.2);
+        scale: 1.05;
+      }
+
+      .voice-btn-outer.listening .voice-ring {
+        border-color: var(--accent-orange);
+        box-shadow: 0 0 15px var(--accent-glow);
+      }
+
+      .voice-btn-outer.listening .voice-btn {
+        border-color: var(--accent-orange);
+        color: var(--accent-orange);
+        background: rgba(255, 123, 0, 0.1);
+        box-shadow: 0 0 10px var(--accent-glow);
+        animation: pulse-opacity 1s infinite alternate;
+      }
+
+      .voice-btn-outer.speaking .voice-ring-2 {
+        animation: scale-voice-1 0.4s infinite ease-in-out alternate;
+      }
+      .voice-btn-outer.speaking .voice-ring-3 {
+        animation: scale-voice-2 0.6s infinite ease-in-out alternate;
+      }
+
+      .chat-history {
+        flex: 1;
+        overflow-y: auto;
+        margin-bottom: 12px;
+        padding-right: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+      }
+
+      .chat-bubble {
+        max-width: 85%;
+        padding: 10px;
+        border-radius: 6px;
+        line-height: 1.5;
+        border: 1px solid rgba(0, 240, 255, 0.1);
+        position: relative;
+      }
+
+      .chat-bubble.user {
+        align-self: flex-end;
+        background: rgba(0, 114, 255, 0.08);
+        border-color: rgba(0, 114, 255, 0.25);
+        color: #e5f2ff;
+        border-top-right-radius: 0;
+      }
+
+      .chat-bubble.jarvis {
+        align-self: flex-start;
+        background: rgba(8, 16, 32, 0.4);
+        border-color: rgba(255, 123, 0, 0.2);
+        color: var(--text-main);
+        border-top-left-radius: 0;
+      }
+
+      .bubble-label {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 8px;
+        letter-spacing: 0.1em;
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .chat-bubble.user .bubble-label { color: var(--primary-cyan); }
+      .chat-bubble.jarvis .bubble-label { color: var(--accent-orange); }
+
+      .ref-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(0, 240, 255, 0.05);
+        border: 1px solid rgba(0, 240, 255, 0.2);
+        color: var(--primary-cyan);
+        font-size: 8px;
+        padding: 2px 5px;
+        border-radius: 3px;
+        margin-bottom: 6px;
+      }
+
+      .chat-input-form {
+        display: flex;
+        gap: 8px;
+      }
+
+      input[type="text"], input[type="password"], textarea, select {
+        background: rgba(5, 10, 25, 0.85);
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        border-radius: 4px;
+        color: var(--primary-cyan);
+        padding: 8px 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        outline: none;
+        width: 100%;
+        transition: all 0.2s ease;
+      }
+
+      input:focus, textarea:focus, select:focus {
+        border-color: var(--primary-cyan);
+        box-shadow: 0 0 6px rgba(0, 240, 255, 0.2);
+      }
+
+      .chat-input-form input {
+        flex: 1;
+      }
+
+      .upload-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .drop-zone {
+        border: 2px dashed rgba(0, 240, 255, 0.2);
+        border-radius: 6px;
+        padding: 24px 16px;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        background: rgba(8, 16, 32, 0.15);
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .drop-zone:hover {
+        border-color: var(--primary-cyan);
+        background: rgba(0, 240, 255, 0.02);
+      }
+
+      .drop-zone input[type="file"] {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .drop-zone-icon {
+        font-size: 1.5rem;
+        color: rgba(0, 240, 255, 0.4);
+        margin-bottom: 6px;
+      }
+
+      .drop-zone-text {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        color: var(--primary-cyan);
+      }
+
+      .drop-zone-subtext {
+        font-size: 8px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      /* ----------------------------------------------------
+         TAB 2: KNOWLEDGE VAULT (GRAPH & NOTES)
+         ---------------------------------------------------- */
+      .vault-grid {
+        grid-template-columns: 1fr 2fr;
+        max-height: 480px;
+      }
+
+      @media (max-width: 1024px) {
+        .vault-grid {
+          grid-template-columns: 1fr;
+          max-height: none;
+        }
+      }
+
+      .notes-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        border-right: 1px solid rgba(0, 240, 255, 0.1);
+        padding-right: 12px;
+        height: 100%;
+      }
+
+      .notes-search-row {
+        position: relative;
+      }
+
+      .notes-search-row i {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        font-size: 10px;
+        color: rgba(0, 240, 255, 0.4);
+      }
+
+      .notes-search-row input {
+        padding-left: 28px;
+      }
+
+      .tags-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-b: 1px solid rgba(0, 240, 255, 0.08);
+        padding-bottom: 8px;
+      }
+
+      .tag-badge {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        background: rgba(8, 16, 32, 0.3);
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .tag-badge:hover {
+        border-color: var(--primary-cyan);
+        color: var(--primary-cyan);
+      }
+
+      .tag-badge.active {
+        background: rgba(0, 240, 255, 0.15);
+        border-color: var(--primary-cyan);
+        color: var(--primary-cyan);
+      }
+
+      .notes-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .note-item-card {
+        padding: 10px;
+        border: 1px solid rgba(0, 240, 255, 0.12);
+        background: rgba(8, 16, 32, 0.2);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .note-item-card:hover {
+        border-color: rgba(0, 240, 255, 0.4);
+        background: rgba(8, 16, 32, 0.3);
+      }
+
+      .note-item-card.active {
+        border-color: var(--primary-cyan);
+        background: rgba(0, 240, 255, 0.03);
+      }
+
+      .note-card-title {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .note-card-snippet {
+        font-size: 10px;
+        color: var(--text-dim);
+        line-height: 1.4;
+        margin-top: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .note-card-footer {
+        display: flex;
+        justify-content: space-between;
+        font-size: 8px;
+        color: rgba(226, 241, 248, 0.4);
+        margin-top: 6px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* Editor Core */
+      .editor-core {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        height: 100%;
+      }
+
+      .editor-header-fields {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .editor-field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .editor-field-group label {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 8px;
+        color: var(--primary-cyan);
+        letter-spacing: 0.08em;
+      }
+
+      .editor-actions-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-y: 1px solid rgba(0, 240, 255, 0.1);
+        padding: 8px 0;
+      }
+
+      .editor-actions-left, .editor-actions-right {
+        display: flex;
+        gap: 8px;
+      }
+
+      .editor-textarea-container {
+        flex: 1;
+        min-height: 240px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .editor-textarea {
+        flex: 1;
+        background: transparent !important;
+        border: 0 !important;
+        padding: 12px !important;
+        resize: none;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        line-height: 1.6;
+        color: #ffffff;
+      }
+
+      .editor-textarea:focus {
+        box-shadow: none !important;
+      }
+
+      .markdown-preview {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px;
+        font-size: 11px;
+        line-height: 1.6;
+        color: #e2f1f8;
+      }
+
+      /* Graph visualization */
+      .graph-container {
+        height: 240px;
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        border-radius: 4px;
+        background: rgba(2, 5, 15, 0.6);
+        position: relative;
+        overflow: hidden;
+        margin-top: 12px;
+      }
+
+      .graph-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+      }
+
+      .graph-tooltip {
+        position: absolute;
+        top: 8px; left: 8px;
+        background: rgba(10, 20, 38, 0.9);
+        border: 1px solid var(--accent-orange);
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        color: var(--accent-orange);
+        pointer-events: none;
+        display: none;
+        max-width: 160px;
+        z-index: 100;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      }
+
+      .graph-tooltip .title {
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* ----------------------------------------------------
+         TAB 3: OPERATIONS (TASKS & SCHEDULES)
+         ---------------------------------------------------- */
+      .ops-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      @media (max-width: 900px) {
+        .ops-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Tasks Matrix */
+      .tasks-panel {
+        display: flex;
+        flex-direction: column;
+        max-height: 480px;
+      }
+
+      .tasks-list {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-right: 4px;
+        margin-top: 12px;
+      }
+
+      .task-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(0, 240, 255, 0.02);
+        border: 1px solid rgba(0, 240, 255, 0.08);
+        padding: 10px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .task-item:hover {
+        border-color: rgba(0, 240, 255, 0.25);
+      }
+
+      .task-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        flex: 1;
+      }
+
+      .task-left i {
+        font-size: 11px;
+        color: var(--primary-cyan);
+      }
+
+      .task-left.completed i {
+        color: var(--success-green);
+      }
+
+      .task-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: #e2f1f8;
+      }
+
+      .task-left.completed .task-text {
+        color: var(--text-dim);
+        text-decoration: line-through;
+        opacity: 0.6;
+      }
+
+      .task-delete-btn {
+        color: var(--text-dark);
+        cursor: pointer;
+        padding: 2px;
+        transition: color 0.2s ease;
+      }
+
+      .task-delete-btn:hover {
+        color: var(--accent-orange);
+      }
+
+      /* Calendar schedules */
+      .calendar-panel {
+        display: flex;
+        flex-direction: column;
+        max-height: 480px;
+      }
+
+      .calendar-timeline {
+        flex: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 14px;
+      }
+
+      .calendar-item {
+        display: flex;
+        gap: 12px;
+        background: rgba(0, 240, 255, 0.015);
+        border: 1px solid rgba(0, 240, 255, 0.06);
+        padding: 12px;
+        border-radius: 4px;
+      }
+
+      .calendar-item-left {
+        width: 80px;
+        border-right: 1px solid rgba(0, 240, 255, 0.1);
+        padding-right: 8px;
+        font-family: 'JetBrains Mono', monospace;
+      }
+
+      .cal-date {
+        font-size: 11px;
+        color: var(--primary-cyan);
+        font-weight: 600;
+      }
+
+      .cal-time {
+        font-size: 9px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      .calendar-item-right {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .cal-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .cal-desc {
+        font-size: 10px;
+        color: var(--text-dim);
+        line-height: 1.4;
+        margin-top: 4px;
+      }
+
+      .cal-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+      }
+
+      /* ----------------------------------------------------
+         TAB 4: INTEGRATIONS HUB
+         ---------------------------------------------------- */
+      .integrations-grid {
+        grid-template-columns: 1fr 2fr;
+      }
+
+      @media (max-width: 900px) {
+        .integrations-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .integrations-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 480px;
+        overflow-y: auto;
+      }
+
+      .integration-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 14px;
+        border: 1px solid rgba(0, 240, 255, 0.08);
+        background: rgba(8, 16, 32, 0.2);
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        transition: all 0.2s ease;
+      }
+
+      .integration-card:hover {
+        border-color: rgba(0, 240, 255, 0.2);
+      }
+
+      .integration-card-label {
+        font-weight: 600;
+        color: #ffffff;
+        letter-spacing: 0.05em;
+      }
+
+      .integration-card-sub {
+        font-size: 8px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      .integration-logs-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 300px;
+      }
+
+      .integration-logs-box {
+        flex: 1;
+        background: rgba(5, 10, 25, 0.6);
+        border: 1px solid rgba(0, 240, 255, 0.12);
+        border-radius: 4px;
+        padding: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        color: var(--primary-cyan);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse;
+        gap: 6px;
+      }
+
+      /* ----------------------------------------------------
+         TAB 5: ANALYSIS DESK
+         ---------------------------------------------------- */
+      .analysis-grid {
+        grid-template-columns: 2fr 1fr;
+      }
+
+      @media (max-width: 1024px) {
+        .analysis-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .data-plots-column {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .table-container {
+        max-height: 160px;
+        overflow-y: auto;
+        border: 1px solid rgba(0, 240, 255, 0.1);
+        border-radius: 4px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+      }
+
+      th {
+        background: rgba(0, 240, 255, 0.06);
+        border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        padding: 8px 10px;
+        color: var(--primary-cyan);
+      }
+
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(0, 240, 255, 0.05);
+        color: var(--text-main);
+      }
+
+      .chart-container {
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(2, 5, 15, 0.4);
+        border: 1px solid rgba(0, 240, 255, 0.1);
+        border-radius: 4px;
+        padding: 10px;
+      }
+
+      .chart-svg {
+        width: 100%;
+        max-width: 480px;
+        height: 100%;
+      }
+
+      .sql-panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .sql-output {
+        flex: 1;
+        background: rgba(2, 5, 15, 0.7);
+        border: 1px solid rgba(0, 240, 255, 0.15);
+        border-radius: 4px;
+        padding: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--primary-cyan);
+        overflow-y: auto;
+        margin-top: 12px;
+        min-height: 140px;
+      }
+
+      /* ----------------------------------------------------
+         TAB 6: CORE CONFIG
+         ---------------------------------------------------- */
+      .config-panel {
+        max-width: 680px;
+        margin: 0 auto;
+      }
+
+      .config-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 14px;
+      }
+
+      @media (max-width: 600px) {
+        .config-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .config-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+      }
+
+      .config-group label {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 9px;
+        color: var(--primary-cyan);
+        letter-spacing: 0.08em;
+      }
+
+      .checkbox-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid rgba(0, 240, 255, 0.12);
+        background: rgba(8, 16, 32, 0.2);
+        border-radius: 4px;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .checkbox-card input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        cursor: pointer;
+      }
+
+      .checkbox-label-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .checkbox-lbl {
+        font-weight: 600;
+        color: #ffffff;
+      }
+
+      .checkbox-sub {
+        font-size: 8px;
+        color: var(--text-dim);
+      }
+
+      .config-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(0, 240, 255, 0.1);
+        padding-top: 14px;
+        margin-top: 20px;
+      }
+
+      /* ----------------------------------------------------
+         GLOBAL STYLES & UTILITY
+         ---------------------------------------------------- */
+      .title-row {
+        border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+        padding-bottom: 6px;
+        margin-bottom: 12px;
+        font-size: 11px;
+        color: var(--primary-cyan);
+        font-family: 'Orbitron', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        letter-spacing: 0.05em;
+      }
+
+      /* Markdown elements inside preview override */
+      .markdown-preview h1 { font-size: 1.15rem; color: var(--primary-cyan); margin: 6px 0; font-family: 'Orbitron', sans-serif; text-shadow: 0 0 5px var(--primary-glow); }
+      .markdown-preview h2 { font-size: 0.95rem; color: #ffffff; margin: 5px 0; border-bottom: 1px solid var(--border-cyan); padding-bottom: 2px; }
+      .markdown-preview p { margin-bottom: 6px; }
+      .markdown-preview ul, .markdown-preview ol { margin-left: 1.2rem; margin-bottom: 6px; }
+      .markdown-preview li { margin-bottom: 2px; }
+      .markdown-preview code { font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.3); padding: 1px 3px; border-radius: 2px; color: var(--accent-orange); }
+      .markdown-preview pre { background: rgba(0,0,0,0.45); padding: 6px; border-radius: 4px; border: 1px solid var(--border-cyan); margin-bottom: 6px; overflow-x: auto; }
+      .markdown-preview pre code { background: none; padding: 0; color: var(--text-main); }
+      .markdown-preview a { color: var(--primary-cyan); text-decoration: underline; }
+
+      /* Keyframes */
+      @keyframes scanline-glow {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      @keyframes pulse-logo {
+        0% { box-shadow: 0 0 4px var(--primary-glow); border-color: rgba(0, 240, 255, 0.5); }
+        50% { box-shadow: 0 0 12px var(--primary-cyan); border-color: var(--primary-cyan); }
+        100% { box-shadow: 0 0 4px var(--primary-glow); border-color: rgba(0, 240, 255, 0.5); }
+      }
+      @keyframes pulse-ring {
+        0% { transform: scale(0.92); opacity: 0.1; }
+        50% { opacity: 0.65; }
+        100% { transform: scale(1.15); opacity: 0; }
+      }
+      @keyframes scale-voice-1 {
+        0% { transform: scale(0.94); }
+        100% { transform: scale(1.1); }
+      }
+      @keyframes scale-voice-2 {
+        0% { transform: scale(0.9); }
+        100% { transform: scale(1.2); }
+      }
+      @keyframes pulse-opacity {
+        0% { opacity: 0.4; }
+        100% { opacity: 1; }
+      }
+      @keyframes fade-in {
+        0% { opacity: 0; transform: translateY(4px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Helpers */
+      .margin-top-xs { margin-top: 8px; }
+      .margin-top-sm { margin-top: 14px; }
+      .flex-grow-1 { flex-grow: 1; }
+      .flex-row { flex-direction: row !important; }
+      .gap-6 { gap: 6px; }
+      .gap-10 { gap: 10px; }
+      .gap-12 { gap: 12px; }
+      .justify-end { justify-content: flex-end; }
+      .align-center { align-items: center; }
+      .width-full { width: 100%; }
+      .height-full { height: 100%; }
+    </style>
+  </head>
+  <body>
+    
+    <div class="app-container">
+      
+      <!-- 1. HUD HEADER -->
+      <header>
+        <div class="header-logo">
+          <div class="logo-icon">
+            <i class="fa-solid fa-brain"></i>
+          </div>
+          <div class="header-title">
+            <h1>JARVIS // NEURAL COCKPIT</h1>
+            <p>OPERATIONAL SYSTEM CORE // STANDALONE MATRIX</p>
+          </div>
+        </div>
+
+        <div class="header-clocks">
+          <div class="clock-block" id="system-status-badge" style="display:none;">
+            <div class="clock-label" style="color:#ef4444;"><i class="fa-solid fa-shield-halved animate-pulse"></i> OFFLINE</div>
+            <div class="clock-val text-xs">LOCAL CACHE</div>
+          </div>
+          <div class="clock-block">
+            <div class="clock-label">SYSTEM_DATE</div>
+            <div class="clock-val" id="hud-date">00/00/0000</div>
+          </div>
+          <div class="clock-block">
+            <div class="clock-label">CHRONOS_TIME</div>
+            <div class="clock-val cyan" id="hud-time">00:00:00</div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 2. TELEMETRY ROW -->
+      <section class="telemetry-row">
+        <!-- CPU GAUGE -->
+        <div class="cyber-panel">
+          <div class="corner-bracket corner-bracket-tl"></div>
+          <div class="corner-bracket corner-bracket-tr"></div>
+          <div class="corner-bracket corner-bracket-bl"></div>
+          <div class="corner-bracket corner-bracket-br"></div>
+          <div class="gauge-header">
+            <span class="gauge-title"><i class="fa-solid fa-microchip"></i> CPU PROCESSOR</span>
+            <span class="gauge-val" id="cpu-val">0%</span>
+          </div>
+          <div class="gauge-bar-outer">
+            <div class="gauge-bar-inner" id="cpu-bar" style="width: 0%;"></div>
+          </div>
+          <div class="telemetry-meta">CORE: <span>ACTIVE</span> // RATIO: <span>NOMINAL</span></div>
+        </div>
+
+        <!-- MEMORY GAUGE -->
+        <div class="cyber-panel">
+          <div class="corner-bracket corner-bracket-tl"></div>
+          <div class="corner-bracket corner-bracket-tr"></div>
+          <div class="corner-bracket corner-bracket-bl"></div>
+          <div class="corner-bracket corner-bracket-br"></div>
+          <div class="gauge-header">
+            <span class="gauge-title"><i class="fa-solid fa-memory"></i> RAM ALLOCATION</span>
+            <span class="gauge-val" id="ram-val">0%</span>
+          </div>
+          <div class="gauge-bar-outer">
+            <div class="gauge-bar-inner" id="ram-bar" style="width: 0%;"></div>
+          </div>
+          <div class="telemetry-meta">USED: <span id="ram-used">0.0 GB</span> // FREE: <span id="ram-free">0.0 GB</span></div>
+        </div>
+
+        <!-- DATABASE GAUGE -->
+        <div class="cyber-panel">
+          <div class="corner-bracket corner-bracket-tl"></div>
+          <div class="corner-bracket corner-bracket-tr"></div>
+          <div class="corner-bracket corner-bracket-bl"></div>
+          <div class="corner-bracket corner-bracket-br"></div>
+          <div class="gauge-header">
+            <span class="gauge-title"><i class="fa-solid fa-database"></i> BRAIN SYNERGY</span>
+            <span class="gauge-val" id="nodes-val">0 NODES</span>
+          </div>
+          <div class="gauge-bar-outer">
+            <div class="gauge-bar-inner" id="nodes-bar" style="width: 0%;"></div>
+          </div>
+          <div class="telemetry-meta">TASKS: <span id="tasks-complete-count">0/0</span> // CALENDAR: <span id="cal-events-count">0</span></div>
+        </div>
+
+        <!-- TECH TERMINAL LOGS -->
+        <div class="cyber-panel console-panel">
+          <div class="corner-bracket corner-bracket-tl"></div>
+          <div class="corner-bracket corner-bracket-tr"></div>
+          <div class="corner-bracket corner-bracket-bl"></div>
+          <div class="corner-bracket corner-bracket-br"></div>
+          <div class="console-header"><i class="fa-solid fa-terminal"></i> TELEMETRY_LOGS_STREAM</div>
+          <div class="console-logs" id="console-logs-box">
+            <!-- logs insert here dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. TABS SWITCHER -->
+      <section class="tabs-row">
+        <button class="cyber-button active" onclick="switchTab('neural')"><i class="fa-solid fa-brain"></i> 🧠 NEURAL CORE</button>
+        <button class="cyber-button" onclick="switchTab('vault')"><i class="fa-solid fa-folder-open"></i> 📂 VAULT GRAPH</button>
+        <button class="cyber-button" onclick="switchTab('ops')"><i class="fa-solid fa-calendar-days"></i> 📅 OPERATIONS</button>
+        <button class="cyber-button" onclick="switchTab('integrations')"><i class="fa-solid fa-plug"></i> 🔌 INTEGRATION HUB</button>
+        <button class="cyber-button" onclick="switchTab('analysis')"><i class="fa-solid fa-chart-simple"></i> 📊 ANALYSIS DESK</button>
+        <button class="cyber-button" onclick="switchTab('settings')"><i class="fa-solid fa-gears"></i> ⚙️ CORE CONFIG</button>
+      </section>
+
+      <!-- 4. WORKSPACES -->
+      <section class="workspaces-container">
+        
+        <!-- TAB 1: NEURAL CORE (CHAT & INGEST) -->
+        <div class="workspace-tab chat-grid active" id="tab-neural">
+          <div class="cyber-panel chat-panel">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            
+            <div class="chat-header">
+              <span class="chat-header-title"><i class="fa-solid fa-comments"></i> JARVIS_COGNITIVE_LINK</span>
+              <button class="cyber-button py-1 px-3" onclick="toggleVoiceOutput()" id="voice-mute-btn" title="Toggle audio feedback">
+                <i class="fa-solid fa-volume-xmark"></i> MUTE
+              </button>
+            </div>
+
+            <!-- Voice pulsing visualizer -->
+            <div class="voice-circle-row">
+              <div class="voice-btn-outer" id="voice-ring-container">
+                <div class="voice-ring voice-ring-1"></div>
+                <div class="voice-ring voice-ring-2"></div>
+                <div class="voice-ring voice-ring-3"></div>
+                <button class="voice-btn" onclick="toggleListening()" id="mic-btn" title="Toggle Microphone speech input">
+                  <i class="fa-solid fa-microphone-slash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Chat timeline -->
+            <div class="chat-history" id="chat-timeline">
+              <!-- messages render here -->
+            </div>
+
+            <!-- Chat Form -->
+            <form class="chat-input-form" onsubmit="sendChatMessage(event)">
+              <input type="text" id="chat-input" placeholder="SEND INSTRUCTION TO COGNITIVE CORE..." autocomplete="off" />
+              <button type="submit" class="cyber-button"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+          </div>
+
+          <!-- Document Ingestion sidebar -->
+          <div class="upload-sidebar">
+            <div class="cyber-panel flex-grow-1 drop-zone">
+              <div class="corner-bracket corner-bracket-tl"></div>
+              <div class="corner-bracket corner-bracket-tr"></div>
+              <div class="corner-bracket corner-bracket-bl"></div>
+              <div class="corner-bracket corner-bracket-br"></div>
+              
+              <input type="file" id="file-uploader" accept=".txt,.md,.csv" onchange="handleFileIngestion(event)">
+              <i class="fa-solid fa-file-import drop-zone-icon"></i>
+              <div class="drop-zone-text">DOCUMENT_INGEST_MATRIX</div>
+              <div class="drop-zone-subtext">CLICK OR DROP TXT, MD, CSV</div>
+            </div>
+            
+            <!-- Quick checklist tracker -->
+            <div class="cyber-panel flex-grow-1 flex flex-col min-h-0" style="max-height: 220px;">
+              <div class="corner-bracket corner-bracket-tl"></div>
+              <div class="corner-bracket corner-bracket-tr"></div>
+              <div class="corner-bracket corner-bracket-bl"></div>
+              <div class="corner-bracket corner-bracket-br"></div>
+              <div class="title-row" style="margin-bottom:6px;"><i class="fa-solid fa-list-check"></i> ACTIVE_TASKS_SUMMARY</div>
+              <div style="flex:1; overflow-y:auto; font-size:10px; font-family:'JetBrains Mono',monospace;" id="quick-tasks-list">
+                <!-- quick checklist tasks -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: KNOWLEDGE VAULT (GRAPH & NOTES) -->
+        <div class="workspace-tab vault-grid" id="tab-vault">
+          <!-- sidebar list -->
+          <div class="cyber-panel notes-sidebar">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            
+            <div class="notes-search-row">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="note-search" placeholder="SEARCH VAULT..." oninput="renderNotesList()" />
+            </div>
+
+            <!-- Tags Filter -->
+            <div class="tags-cloud" id="vault-tags-cloud">
+              <!-- tags list -->
+            </div>
+
+            <!-- Notes List -->
+            <div class="notes-list" id="notes-cards-list">
+              <!-- list notes cards -->
+            </div>
+
+            <button class="cyber-button width-full margin-top-xs" onclick="createNewNote()"><i class="fa-solid fa-plus"></i> NEW SYLLABUS NODE</button>
+          </div>
+
+          <!-- editor & canvas graph column -->
+          <div style="display:flex; flex-direction:column; gap:16px; height:100%;">
+            <!-- 2D Graph -->
+            <div class="graph-container">
+              <div class="graph-tooltip" id="graph-node-tooltip">
+                <div class="title">Note Title</div>
+                <div class="tags" style="color:var(--text-dim); font-size:8px;">#tags</div>
+              </div>
+              <canvas class="graph-canvas" id="neural-graph-canvas"></canvas>
+            </div>
+
+            <!-- Editor fields -->
+            <div class="cyber-panel editor-core flex-grow-1">
+              <div class="corner-bracket corner-bracket-tl"></div>
+              <div class="corner-bracket corner-bracket-tr"></div>
+              <div class="corner-bracket corner-bracket-bl"></div>
+              <div class="corner-bracket corner-bracket-br"></div>
+
+              <div class="editor-header-fields">
+                <div class="editor-field-group">
+                  <label>NODE_TITLE</label>
+                  <input type="text" id="editor-title" placeholder="ENTER TITLE..." />
+                </div>
+                <div class="editor-field-group">
+                  <label>NODE_TAGS</label>
+                  <input type="text" id="editor-tags" placeholder="project, guides, memories..." />
+                </div>
+              </div>
+
+              <div class="editor-actions-row">
+                <div class="editor-actions-left">
+                  <button class="cyber-button active py-1 px-3" id="edit-mode-btn" onclick="setEditorMode('edit')"><i class="fa-solid fa-pen-nib"></i> WRITE</button>
+                  <button class="cyber-button py-1 px-3" id="preview-mode-btn" onclick="setEditorMode('preview')"><i class="fa-solid fa-eye"></i> GRAPHICS_VIEW</button>
+                </div>
+                <div class="editor-actions-right">
+                  <button class="cyber-button accent py-1 px-3" onclick="deleteActiveNote()"><i class="fa-solid fa-trash-can"></i> PURGE</button>
+                  <button class="cyber-button py-1 px-3" style="background:rgba(0, 240, 255, 0.1);" onclick="saveActiveNote()"><i class="fa-solid fa-floppy-disk"></i> SYNC</button>
+                </div>
+              </div>
+
+              <!-- text panel -->
+              <div class="editor-textarea-container">
+                <textarea class="editor-textarea" id="editor-text" placeholder="WRITE MARKDOWN MEMORIES..."></textarea>
+                <div class="markdown-preview" id="editor-preview" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: OPERATIONS (TASKS & SCHEDULES) -->
+        <div class="workspace-tab ops-grid" id="tab-ops">
+          <!-- Tasks list panel -->
+          <div class="cyber-panel tasks-panel">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            <div class="title-row"><i class="fa-solid fa-list-check"></i> TASK_MATRIX_CONTROLLER</div>
+
+            <form class="chat-input-form" onsubmit="addNewTask(event)">
+              <input type="text" id="task-input" placeholder="ENTER OBJECTIVE ASSIGNMENT..." />
+              <button type="submit" class="cyber-button"><i class="fa-solid fa-plus"></i></button>
+            </form>
+
+            <div class="tasks-list" id="tasks-records-list">
+              <!-- tasks records -->
+            </div>
+          </div>
+
+          <!-- Calendar agendas panel -->
+          <div class="cyber-panel calendar-panel">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            <div class="title-row"><i class="fa-solid fa-calendar"></i> CHRONOS_TIMELINE_AGENDA</div>
+
+            <!-- Add Event Form -->
+            <form onsubmit="addCalendarEvent(event)" style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px; font-family:'JetBrains Mono',monospace;">
+              <input type="text" id="event-title" placeholder="EVENT OBJECTIVE..." required />
+              <div style="display:flex; gap:8px;">
+                <input type="date" id="event-date" required />
+                <input type="time" id="event-time" />
+              </div>
+              <input type="text" id="event-desc" placeholder="EVENT DESCRIPTION..." />
+              <button type="submit" class="cyber-button justify-center"><i class="fa-solid fa-calendar-plus"></i> SCHEDULE EVENT</button>
+            </form>
+
+            <!-- events list -->
+            <div class="calendar-timeline" id="calendar-events-list">
+              <!-- calendar items -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: INTEGRATIONS HUB -->
+        <div class="workspace-tab integrations-grid" id="tab-integrations">
+          <!-- Integrations toggles list -->
+          <div class="integrations-list">
+            <!-- Slack -->
+            <div class="integration-card">
+              <div>
+                <span class="integration-card-label"><i class="fa-brands fa-slack text-cyan-400"></i> SLACK_LINK</span>
+                <div class="integration-card-sub">Channels status monitor</div>
+              </div>
+              <button class="cyber-button py-1 px-3" onclick="toggleIntegration('slack')" id="link-slack">LINKED</button>
+            </div>
+            <!-- GitHub -->
+            <div class="integration-card">
+              <div>
+                <span class="integration-card-label"><i class="fa-brands fa-github text-cyan-400"></i> GITHUB_SYNERGY</span>
+                <div class="integration-card-sub">Repo updates webhook</div>
+              </div>
+              <button class="cyber-button py-1 px-3" onclick="toggleIntegration('github')" id="link-github">LINKED</button>
+            </div>
+            <!-- Notion -->
+            <div class="integration-card">
+              <div>
+                <span class="integration-card-label"><i class="fa-solid fa-book-bookmark text-cyan-400"></i> NOTION_VIRTUAL</span>
+                <div class="integration-card-sub">Note syncing modules</div>
+              </div>
+              <button class="cyber-button py-1 px-3" onclick="toggleIntegration('notion')" id="link-notion">LINKED</button>
+            </div>
+            <!-- Gmail -->
+            <div class="integration-card">
+              <div>
+                <span class="integration-card-label"><i class="fa-solid fa-envelope text-cyan-400"></i> GMAIL_OPERATIONS</span>
+                <div class="integration-card-sub">Drafts dispatcher</div>
+              </div>
+              <button class="cyber-button py-1 px-3" onclick="toggleIntegration('gmail')" id="link-gmail">LINKED</button>
+            </div>
+            <!-- Google Calendar -->
+            <div class="integration-card">
+              <div>
+                <span class="integration-card-label"><i class="fa-solid fa-calendar-check text-cyan-400"></i> GOOGLE_CALENDAR</span>
+                <div class="integration-card-sub">Event scheduling updates</div>
+              </div>
+              <button class="cyber-button py-1 px-3" onclick="toggleIntegration('gcal')" id="link-gcal">LINKED</button>
+            </div>
+          </div>
+
+          <!-- Synchronization logs box -->
+          <div class="cyber-panel integration-logs-panel">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            <div class="title-row"><i class="fa-solid fa-network-wired"></i> AUTOMATION_TRAFFIC_TELEMETRY</div>
+            
+            <div class="integration-logs-box" id="integration-logs-container">
+              <!-- Logs print here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: ANALYSIS DESK -->
+        <div class="workspace-tab analysis-grid" id="tab-analysis">
+          <!-- CSV table and plot panel -->
+          <div class="data-plots-column">
+            <!-- parsed CSV grid table -->
+            <div class="cyber-panel">
+              <div class="corner-bracket corner-bracket-tl"></div>
+              <div class="corner-bracket corner-bracket-tr"></div>
+              <div class="corner-bracket corner-bracket-bl"></div>
+              <div class="corner-bracket corner-bracket-br"></div>
+              <div class="title-row"><i class="fa-solid fa-table"></i> DATAFRAME_EXPLORER_GRID</div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex flex-col gap-6">
+                  <label class="font-cyber text-[8px] text-cyan-600">CSV_DATA_INPUT</label>
+                  <textarea id="csv-input-area" rows="5" style="font-size:9px;" oninput="processCsvAnalysis()"></textarea>
+                </div>
+                <div class="table-container" id="csv-data-table-box">
+                  <!-- table grid -->
+                </div>
+              </div>
+            </div>
+
+            <!-- SVG graph visualizer -->
+            <div class="cyber-panel chart-container">
+              <div class="corner-bracket corner-bracket-tl"></div>
+              <div class="corner-bracket corner-bracket-tr"></div>
+              <div class="corner-bracket corner-bracket-bl"></div>
+              <div class="corner-bracket corner-bracket-br"></div>
+              <svg class="chart-svg" id="analytic-chart-svg"></svg>
+            </div>
+          </div>
+
+          <!-- SQL neural command generator -->
+          <div class="cyber-panel sql-panel">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            <div class="title-row"><i class="fa-solid fa-database"></i> SQL_QUERY_ENGINE_MOCK</div>
+
+            <form onsubmit="runSqlGenerator(event)" style="font-family:'JetBrains Mono',monospace; font-size:11px; display:flex; flex-direction:column; gap:10px;">
+              <label class="font-cyber text-[8px] text-cyan-600">NATURAL_LANGUAGE_OBJECTIVE</label>
+              <input type="text" id="sql-prompt-input" placeholder="e.g. Select month and expenses where count > 50..." required />
+              <button type="submit" class="cyber-button justify-center"><i class="fa-solid fa-code"></i> FORMULATE SQL SYNTAX</button>
+            </form>
+
+            <pre class="sql-output" id="sql-output-box">SELECT * FROM dataset;</pre>
+          </div>
+        </div>
+
+        <!-- TAB 6: CORE CONFIG -->
+        <div class="workspace-tab" id="tab-settings">
+          <div class="cyber-panel config-panel">
+            <div class="corner-bracket corner-bracket-tl"></div>
+            <div class="corner-bracket corner-bracket-tr"></div>
+            <div class="corner-bracket corner-bracket-bl"></div>
+            <div class="corner-bracket corner-bracket-br"></div>
+            <div class="title-row"><i class="fa-solid fa-sliders"></i> COGNITIVE_SYSTEMS_PRESETS</div>
+
+            <div class="config-grid">
+              <!-- Name & Model -->
+              <div class="config-group gap-12">
+                <div class="config-group">
+                  <label>COGNITIVE_USER_NAME</label>
+                  <input type="text" id="settings-username" placeholder="Sir / Ma'am..." />
+                </div>
+                <div class="config-group">
+                  <label>DEFAULT_MODEL_MATRIX</label>
+                  <select id="settings-model">
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Default)</option>
+                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                  </select>
+                </div>
+                <div class="checkbox-card" onclick="toggleVoiceSettingsCheckbox()">
+                  <input type="checkbox" id="settings-voice-feedback">
+                  <div class="checkbox-label-block">
+                    <span class="checkbox-lbl">VERBAL_SPEECH_OUTPUT</span>
+                    <span class="checkbox-sub">Jarvis speaks out loud.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- API key -->
+              <div class="config-group gap-12">
+                <div class="config-group">
+                  <label>GEMINI_API_KEY</label>
+                  <input type="password" id="settings-apikey" placeholder="Enter key..." />
+                </div>
+                <div class="cyber-panel flex-grow-1" style="border-color:rgba(0, 240, 255, 0.1); padding:10px; font-size:9px; color:var(--text-dim); line-height:1.5;">
+                  The Gemini API key connects the RAG search matrix directly to Google AI Studio servers. Stored securely on client storage coordinates.
+                  <a href="https://aistudio.google.com/" target="_blank" style="color:var(--primary-cyan); display:block; margin-top:8px;">Google AI Studio Key Retrieval &rarr;</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="config-footer">
+              <button class="cyber-button accent" onclick="wipeSyncHistory()"><i class="fa-solid fa-radiation"></i> PURGE SYNAPSE MEMORY</button>
+              <button class="cyber-button" onclick="saveCoreSettings()"><i class="fa-solid fa-arrows-rotate"></i> SYNCHRONIZE CORES</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- JS SCRIPTS -->
+    <script>
+      /* STATE CORES INITIALIZERS */
+      let compiledKey = "%VITE_GEMINI_API_KEY%";
+      if (compiledKey.startsWith("%") && compiledKey.endsWith("%")) {
+        compiledKey = "";
+      }
+
+      let settings = {
+        geminiApiKey: compiledKey || '',
+        username: 'Sir',
+        defaultModel: 'gemini-2.5-flash',
+        voiceEnabled: false,
+        integrations: { slack: true, github: true, notion: false, gmail: false, gcal: false }
+      };
+
+      let notes = [];
+      let activeNote = null;
+      let tasks = [];
+      let calendarEvents = [];
+      let chatHistory = [];
+      
+      let isListening = false;
+      let isSpeaking = false;
+      let editorMode = 'edit'; // 'edit' or 'preview'
+      let selectedFilterTag = null;
+
+      // Web Speech API
+      let recognition = null;
+      
+      // Canvas graph variables
+      let canvas = null;
+      let ctx = null;
+      let nodes = [];
+      let hoveredNode = null;
+      let draggedNode = null;
+      let mousePos = { x: 0, y: 0 };
+      
+      // Default CSV content
+      const DEFAULT_CSV = `Month,Expenses,SynapseCount,TasksDone\nJan,1200,45,28\nFeb,1500,56,32\nMar,1100,72,40\nApr,1800,90,38\nMay,2100,115,50`;
+
+      // Seed Welcome Note
+      const WELCOME_NOTE = {
+        id: 'welcome-guide.md',
+        title: 'Welcome to Jarvis Second Brain',
+        tags: ['onboarding', 'guide', 'jarvis'],
+        created: new Date().toISOString(),
+        modified: new Date().toISOString(),
+        content: `---\ntitle: "Welcome to Jarvis Second Brain"\ntags: "onboarding, guide, jarvis"\ncreated: "${new Date().toISOString()}"\nmodified: "${new Date().toISOString()}"\n---\n\n# Welcome, Sir!\n\nI am **Jarvis**, your personal AI assistant and Second Brain. I am designed to organize your thoughts, catalog your knowledge, and assist you in retrieving information.\n\n## Core Subsystems:\n1. **🧠 Neural Core (Chat)**: Dictate prompts, upload CSV/text archives, and ask RAG questions.\n2. **📂 Vault Graph**: Explore notes connections dynamically in 2D canvas.\n3. **📅 Operations**: Checklist scheduler matrix.\n4. **🔌 Integration Hub**: Connect simulated channels.\n\nType your instructions in the Chat box, or dictate via microphone.`
+      };
+
+      // Initializer Loop
+      window.onload = function() {
+        // Load Clock
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Load Settings
+        const storedSettings = localStorage.getItem('jarvis_standalone_settings');
+        if (storedSettings) {
+          settings = { ...settings, ...JSON.parse(storedSettings) };
+        } else {
+          localStorage.setItem('jarvis_standalone_settings', JSON.stringify(settings));
+        }
+
+        // Initialize UI Settings
+        document.getElementById('settings-username').value = settings.username;
+        document.getElementById('settings-model').value = settings.defaultModel;
+        document.getElementById('settings-apikey').value = settings.geminiApiKey;
+        document.getElementById('settings-voice-feedback').checked = settings.voiceEnabled;
+
+        // Initialize CSV analysis area
+        document.getElementById('csv-input-area').value = DEFAULT_CSV;
+
+        // Sync local storage notes
+        const storedNotes = localStorage.getItem('jarvis_standalone_notes');
+        if (storedNotes) {
+          notes = JSON.parse(storedNotes);
+        } else {
+          notes = [WELCOME_NOTE];
+          localStorage.setItem('jarvis_standalone_notes', JSON.stringify(notes));
+        }
+
+        // Active note
+        if (notes.length > 0) {
+          activeNote = notes[0];
+          loadNoteToEditor(activeNote);
+        }
+
+        // Sync tasks
+        const storedTasks = localStorage.getItem('jarvis_standalone_tasks');
+        if (storedTasks) {
+          tasks = JSON.parse(storedTasks);
+        } else {
+          tasks = [
+            { id: '1', text: 'Calibrate neural graph maps', completed: true },
+            { id: '2', text: 'Configure Gemini model parameters', completed: false }
+          ];
+          localStorage.setItem('jarvis_standalone_tasks', JSON.stringify(tasks));
+        }
+
+        // Sync calendar events
+        const storedCal = localStorage.getItem('jarvis_standalone_calendar');
+        if (storedCal) {
+          calendarEvents = JSON.parse(storedCal);
+        } else {
+          calendarEvents = [
+            { id: '1', title: 'Jarvis Integration Run', date: new Date().toISOString().split('T')[0], time: '10:00', description: 'System operational test.' }
+          ];
+          localStorage.setItem('jarvis_standalone_calendar', JSON.stringify(calendarEvents));
+        }
+
+        // Sync chat logs
+        const storedHistory = localStorage.getItem('jarvis_standalone_history');
+        if (storedHistory) {
+          chatHistory = JSON.parse(storedHistory);
+        }
+
+        // Launch Subsystem Modules
+        renderNotesList();
+        renderTasks();
+        renderCalendar();
+        renderChatTimeline();
+        processCsvAnalysis();
+        updateIntegrationHubUI();
+        initNeuralSpeech();
+        initBrainGraphCanvas();
+        updateTelemetryGauges();
+
+        // Push startup log
+        logTelemetryEvent(`System online. Neural synapses locked for ${settings.username}.`);
+        logTelemetryEvent(`Gemini API key loaded from core settings repository.`);
+      };
+
+      // Dynamic clock update
+      function updateClock() {
+        const d = new Date();
+        document.getElementById('hud-date').innerText = d.toLocaleDateString();
+        document.getElementById('hud-time').innerText = d.toLocaleTimeString();
+      }
+
+      // Telemetry diagnostics update
+      function updateTelemetryGauges() {
+        // CPU
+        const cpu = 4 + Math.floor(Math.random() * 8);
+        document.getElementById('cpu-val').innerText = `${cpu}%`;
+        document.getElementById('cpu-bar').style.width = `${cpu}%`;
+
+        // RAM
+        const ramUsed = (3.2 + Math.random() * 0.4).toFixed(1);
+        const ramPct = Math.round((parseFloat(ramUsed) / 16.0) * 100);
+        document.getElementById('ram-val').innerText = `${ramPct}%`;
+        document.getElementById('ram-bar').style.width = `${ramPct}%`;
+        document.getElementById('ram-used').innerText = `${ramUsed} GB`;
+        document.getElementById('ram-free').innerText = `${(16.0 - parseFloat(ramUsed)).toFixed(1)} GB`;
+
+        // Nodes
+        document.getElementById('nodes-val').innerText = `${notes.length} NODES`;
+        const taskDoneCount = tasks.filter(t => t.completed).length;
+        const taskPct = tasks.length > 0 ? Math.round((taskDoneCount / tasks.length) * 100) : 0;
+        document.getElementById('nodes-bar').style.width = `${taskPct}%`;
+        document.getElementById('tasks-complete-count').innerText = `${taskDoneCount}/${tasks.length}`;
+        document.getElementById('cal-events-count').innerText = calendarEvents.length;
+
+        // Auto polling loops
+        setTimeout(updateTelemetryGauges, 4000);
+      }
+
+      // Log ticker stream
+      function logTelemetryEvent(msg) {
+        const time = new Date().toLocaleTimeString();
+        const logsBox = document.getElementById('console-logs-box');
+        
+        const logRow = document.createElement('div');
+        logRow.innerText = `[${time}] ${msg}`;
+        logsBox.appendChild(logRow);
+        
+        // trim log overflow
+        while (logsBox.children.length > 25) {
+          logsBox.removeChild(logsBox.firstChild);
+        }
+      }
+
+      // Tab selector switches
+      function switchTab(tabId) {
+        document.querySelectorAll('.cyber-button').forEach(btn => {
+          if (btn.innerText.includes(tabId.toUpperCase()) || (tabId === 'neural' && btn.innerText.includes('NEURAL'))) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+
+        document.querySelectorAll('.workspace-tab').forEach(pane => {
+          pane.classList.remove('active');
+        });
+
+        const activePane = document.getElementById(`tab-${tabId}`);
+        if (activePane) {
+          activePane.classList.add('active');
+          if (tabId === 'vault') {
+            // Resize canvas to match box
+            resizeGraphCanvas();
+          }
+        }
+      }
+
+      /* ----------------------------------------------------
+         INTEGRATION WEB SPEECH API (Voice mic)
+         ---------------------------------------------------- */
+      function initNeuralSpeech() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          recognition = new SpeechRecognition();
+          recognition.continuous = false;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+
+          recognition.onstart = () => {
+            isListening = true;
+            document.getElementById('voice-ring-container').classList.add('listening');
+            document.getElementById('mic-btn').innerHTML = '<i class="fa-solid fa-microphone"></i>';
+            logTelemetryEvent("Microphone active. Synthesizing voice commands...");
+          };
+
+          recognition.onresult = (e) => {
+            const transcript = e.results[0][0].transcript;
+            document.getElementById('chat-input').value = transcript;
+            logTelemetryEvent(`Speech Recognition match: "${transcript}"`);
+            
+            // Check voice command macros
+            processVoiceMacros(transcript);
+          };
+
+          recognition.onerror = (e) => {
+            console.error(e.error);
+            isListening = false;
+            document.getElementById('voice-ring-container').classList.remove('listening');
+            document.getElementById('mic-btn').innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+          };
+
+          recognition.onend = () => {
+            isListening = false;
+            document.getElementById('voice-ring-container').classList.remove('listening');
+            document.getElementById('mic-btn').innerHTML = '<i class="fa-solid fa-microphone-slash"></i>';
+          };
+        }
+      }
+
+      function toggleListening() {
+        if (!recognition) {
+          alert("Speech recognition is not supported in this browser environment, sir.");
+          return;
+        }
+
+        if (isListening) {
+          recognition.stop();
+        } else {
+          // Cancel speech output
+          window.speechSynthesis.cancel();
+          isSpeaking = false;
+          document.getElementById('voice-ring-container').classList.remove('speaking');
+          recognition.start();
+        }
+      }
+
+      function toggleVoiceOutput() {
+        settings.voiceEnabled = !settings.voiceEnabled;
+        localStorage.setItem('jarvis_standalone_settings', JSON.stringify(settings));
+        
+        const muteBtn = document.getElementById('voice-mute-btn');
+        if (settings.voiceEnabled) {
+          muteBtn.classList.add('active');
+          muteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i> ACTIVE';
+          logTelemetryEvent("Vocal speech feedback: ENABLED");
+        } else {
+          muteBtn.classList.remove('active');
+          muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i> MUTE';
+          logTelemetryEvent("Vocal speech feedback: DISABLED");
+          window.speechSynthesis.cancel();
+          isSpeaking = false;
+          document.getElementById('voice-ring-container').classList.remove('speaking');
+        }
+      }
+
+      function speakReply(text) {
+        if (!('speechSynthesis' in window) || !settings.voiceEnabled) return;
+
+        window.speechSynthesis.cancel();
+        
+        // Strip markdown and link tags for clear pronunciations
+        const speechText = text
+          .replace(/[\*\_#`\-~]/g, '')
+          .replace(/\[(.*?)\]\(.*?\)/g, '$1');
+
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.rate = 1.05;
+        utterance.pitch = 0.95; // British butler tone
+
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.lang.startsWith('en-GB') || v.name.includes('George') || v.name.includes('Google UK English')) || voices.find(v => v.lang.startsWith('en')) || voices[0];
+        
+        if (preferred) utterance.voice = preferred;
+
+        utterance.onstart = () => {
+          isSpeaking = true;
+          document.getElementById('voice-ring-container').classList.add('speaking');
+        };
+
+        utterance.onend = () => {
+          isSpeaking = false;
+          document.getElementById('voice-ring-container').classList.remove('speaking');
+        };
+
+        utterance.onerror = () => {
+          isSpeaking = false;
+          document.getElementById('voice-ring-container').classList.remove('speaking');
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }
+
+      function processVoiceMacros(text) {
+        const clean = text.toLowerCase().trim();
+        const createNoteMatch = clean.match(/^(?:create|add|make)\s+note\s+(.+)$/);
+        const createTaskMatch = clean.match(/^(?:create|add|make)\s+task\s+(.+)$/);
+
+        if (createNoteMatch) {
+          const title = createNoteMatch[1];
+          const formattedTitle = title.charAt(0).toUpperCase() + title.slice(1);
+          
+          const newNote = {
+            id: `${title.replace(/\s+/g, '-')}-${Date.now().toString().slice(-4)}.md`,
+            title: formattedTitle,
+            tags: ['voice-memo'],
+            created: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            content: `# ${formattedTitle}\n\n*Memo dictated via voice commands, sir.*`
+          };
+
+          notes.push(newNote);
+          localStorage.setItem('jarvis_standalone_notes', JSON.stringify(notes));
+          activeNote = newNote;
+          
+          renderNotesList();
+          loadNoteToEditor(newNote);
+          
+          const reply = `Objective complete, sir. I created a new note titled '${formattedTitle}' in your vault.`;
+          addJarvisResponse(reply);
+          document.getElementById('chat-input').value = '';
+        } 
+        else if (createTaskMatch) {
+          const taskText = createTaskMatch[1];
+          const formattedTask = taskText.charAt(0).toUpperCase() + taskText.slice(1);
+
+          const newTask = {
+            id: Date.now().toString(),
+            text: formattedTask,
+            completed: false
+          };
+
+          tasks.push(newTask);
+          localStorage.setItem('jarvis_standalone_tasks', JSON.stringify(tasks));
+          
+          renderTasks();
+          
+          const reply = `Task registered, sir. Added '${formattedTask}' to your Operations Checklist.`;
+          addJarvisResponse(reply);
+          document.getElementById('chat-input').value = '';
+        }
+      }
+
+      function addJarvisResponse(text) {
+        const jarvisMsg = {
+          id: Date.now().toString(),
+          sender: 'jarvis',
+          text,
+          timestamp: new Date()
+        };
+        chatHistory.push(jarvisMsg);
+        localStorage.setItem('jarvis_standalone_history', JSON.stringify(chatHistory));
+        renderChatTimeline();
+        speakReply(text);
+      }
+
+      /* ----------------------------------------------------
+         TAB 1: COGNITIVE RAG CHAT DIRECT QUERIES
+         ---------------------------------------------------- */
+      async function sendChatMessage(e) {
+        if (e) e.preventDefault();
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // Add user message
+        const userMsg = {
+          id: Date.now().toString(),
+          sender: 'user',
+          text,
+          timestamp: new Date()
+        };
+        chatHistory.push(userMsg);
+        input.value = '';
+        renderChatTimeline();
+
+        // Retrieve RAG matches
+        const queryTokens = text.toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length > 2);
+        const scored = notes.map(n => {
+          let score = 0;
+          const titleLower = n.title.toLowerCase();
+          const contentLower = n.content.toLowerCase();
+          queryTokens.forEach(token => {
+            if (titleLower.includes(token)) score += 15;
+            if (contentLower.includes(token)) score += 1;
+          });
+          return { note: n, score };
+        });
+
+        const relevant = scored.filter(s => s.score > 0).sort((a,b) => b.score - a.score).slice(0, 2).map(s => s.note);
+        
+        let contextText = '';
+        if (relevant.length > 0) {
+          contextText = 'Context from the user\'s Second Brain notes:\n\n' +
+            relevant.map(n => `--- NOTE: "${n.title}" ---\nTags: ${n.tags.join(', ')}\nContent:\n${n.content}`).join('\n\n') + '\n\n';
+        }
+
+        // Show thinking bubble
+        const timeline = document.getElementById('chat-timeline');
+        const thinkingBubble = document.createElement('div');
+        thinkingBubble.className = 'chat-bubble jarvis';
+        thinkingBubble.id = 'chat-thinking-indicator';
+        thinkingBubble.innerHTML = `<span class="bubble-label">JARVIS</span><i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing telemetry...`;
+        timeline.appendChild(thinkingBubble);
+        timeline.scrollTop = timeline.scrollHeight;
+
+        try {
+          // Check API Key
+          if (!settings.geminiApiKey) {
+            throw new Error("API Key offline (please configure a key in the settings panel, sir).");
+          }
+
+          const systemInstruction = `You are JARVIS, the legendary AI assistant from Iron Man. 
+Act as a witty, intelligent, and loyal digital butler for the user (address them as '${settings.username}'). 
+You serve as the operational core of their 'Second Brain' knowledge system.
+
+Your characteristics:
+- Polished, eloquent, and professional, with a touch of dry British humor and polite banter.
+- Extremely helpful, structured, and concise. Avoid rambling.
+- Use markdown in your responses (bullet points, bold text, code blocks) to make information clear and digestible.
+
+Notes Context integration:
+${contextText !== '' ? `Use the provided context from their personal notes to answer their questions. If the context contains the answer, prioritize it. You MUST reference the note titles (e.g. "According to your note 'Welcome to Jarvis Second Brain'...") to show where you retrieved the information.` : `If the user asks questions that relate to notes they *might* want to write down, suggest creating a note. Highlight that you can save files directly to their local vault.`}
+
+If the user asks to "search the web" or asks about news/weather, simulate a search using your base knowledge, but format it cleanly as a structured search result, citing sources to maintain the illusion of an active web agent.
+
+Current local system time: ${new Date().toLocaleString()}
+Always maintain character. Keep responses relatively short (1-3 paragraphs).`;
+
+          // Format contents
+          const formattedContents = [];
+          // Slice history for performance
+          const recentHistory = chatHistory.slice(-8);
+          recentHistory.forEach(msg => {
+            formattedContents.push({
+              role: msg.sender === 'user' ? 'user' : 'model',
+              parts: [{ text: msg.text }]
+            });
+          });
+
+          // Add current message
+          formattedContents.push({
+            role: 'user',
+            parts: [{ text: text }]
+          });
+
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${settings.defaultModel}:generateContent?key=${settings.geminiApiKey}`;
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: formattedContents,
+              systemInstruction: {
+                parts: [{ text: systemInstruction }]
+              },
+              generationConfig: {
+                temperature: 0.7
+              }
+            })
+          });
+
+          const indicator = document.getElementById('chat-thinking-indicator');
+          if (indicator) timeline.removeChild(indicator);
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.error?.message || `HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I apologize, sir. I could not parse this node.";
+          
+          const jarvisMsg = {
+            id: Date.now().toString(),
+            sender: 'jarvis',
+            text: reply,
+            timestamp: new Date(),
+            notesReferenced: relevant.map(n => ({ id: n.id, title: n.title }))
+          };
+
+          chatHistory.push(jarvisMsg);
+          localStorage.setItem('jarvis_standalone_history', JSON.stringify(chatHistory));
+          renderChatTimeline();
+          speakReply(reply);
+
+        } catch (err) {
+          const indicator = document.getElementById('chat-thinking-indicator');
+          if (indicator) timeline.removeChild(indicator);
+
+          // Local Fallback simulation
+          let replyFallback = `Sir, I am running on local offline core parameters. (API Status: ${err.message}). `;
+          if (relevant.length > 0) {
+            replyFallback += `However, I scanned local storage and found match notes:\n\n` +
+              relevant.map(n => `- **${n.title}**: "${n.content.slice(0, 150)}..."`).join('\n');
+          } else {
+            replyFallback += `No keyword reference matches for "${text}" in local notes bank. Please configure your key in Settings.`;
+          }
+
+          const jarvisMsg = {
+            id: Date.now().toString(),
+            sender: 'jarvis',
+            text: replyFallback,
+            timestamp: new Date(),
+            localMode: true
+          };
+
+          chatHistory.push(jarvisMsg);
+          localStorage.setItem('jarvis_standalone_history', JSON.stringify(chatHistory));
+          renderChatTimeline();
+          speakReply(replyFallback);
+        }
+      }
+
+      function renderChatTimeline() {
+        const timeline = document.getElementById('chat-timeline');
+        timeline.innerHTML = '';
+
+        if (chatHistory.length === 0) {
+          timeline.innerHTML = `<div style="text-align:center; padding: 20px; color:var(--text-dim); line-height:1.6; font-size:10px;">
+            🤖 JARVIS ACTIVE // SYSTEM CODES SECURE<br>
+            "I stand ready, sir. Dictate prompts via mic or enter commands to search."
+          </div>`;
+          return;
+        }
+
+        chatHistory.forEach(msg => {
+          const bubble = document.createElement('div');
+          bubble.className = `chat-bubble ${msg.sender}`;
+          
+          let refs = '';
+          if (msg.notesReferenced && msg.notesReferenced.length > 0) {
+            refs = msg.notesReferenced.map(n => `<span class="ref-tag"><i class="fa-solid fa-brain"></i> '${n.title}'</span>`).join(' ');
+          }
+
+          bubble.innerHTML = `
+            <span class="bubble-label">${msg.sender === 'user' ? 'USER' : 'JARVIS'}</span>
+            ${refs}
+            ${msg.localMode ? '<span class="ref-tag" style="border-color:#e056fd; color:#e056fd;">⚠️ LOCAL FALLBACK</span>' : ''}
+            <div>${marked.parse(msg.text)}</div>
+          `;
+          timeline.appendChild(bubble);
+        });
+
+        timeline.scrollTop = timeline.scrollHeight;
+      }
+
+      // Handle Text Drag/Drop upload ingestion
+      function handleFileIngestion(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const text = event.target.result;
+          const title = file.name.replace(/\.[^/.]+$/, "");
+          const isCsv = file.name.endsWith('.csv');
+          
+          let tags = ['imported'];
+          let content = '';
+
+          if (isCsv) {
+            content = `# CSV Database: ${title}\n\nContents imported:\n\n\`\`\`csv\n${text}\n\`\`\``;
+            tags.push('data-sheets');
+            
+            // Set text in csv input for tab-analysis
+            document.getElementById('csv-input-area').value = text;
+            processCsvAnalysis();
+          } else {
+            content = `# Document Record: ${title}\n\n${text}`;
+            tags.push('reading-room');
+          }
+
+          const newNote = {
+            id: `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}.md`,
+            title,
+            tags,
+            created: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            content
+          };
+
+          notes.push(newNote);
+          localStorage.setItem('jarvis_standalone_notes', JSON.stringify(notes));
+          activeNote = newNote;
+
+          renderNotesList();
+          loadNoteToEditor(newNote);
+          logTelemetryEvent(`Successfully ingested document file: ${file.name}`);
+          
+          addJarvisResponse(`Sir, I parsed '${file.name}' and indexed it as a note titled '${title}' in your knowledge vault.`);
+          switchTab('vault');
+        };
+        reader.readAsText(file);
+      }
+
+      /* ----------------------------------------------------
+         TAB 2: KNOWLEDGE VAULT NOTES & canvas physics graph
+         ---------------------------------------------------- */
+      function renderNotesList() {
+        const list = document.getElementById('notes-cards-list');
+        list.innerHTML = '';
+
+        const search = document.getElementById('note-search').value.toLowerCase();
+        
+        // Filter tags list
+        const filtered = notes.filter(n => {
+          const matchesSearch = n.title.toLowerCase().includes(search) || 
+                                n.content.toLowerCase().includes(search) ||
+                                n.tags.some(t => t.toLowerCase().includes(search));
+          const matchesTag = !selectedFilterTag || n.tags.includes(selectedFilterTag);
+          return matchesSearch && matchesTag;
+        });
+
+        // Tags cloud generator
+        const allTags = Array.from(new Set(notes.flatMap(n => n.tags)));
+        const cloud = document.getElementById('vault-tags-cloud');
+        cloud.innerHTML = `<span class="tag-badge ${!selectedFilterTag ? 'active' : ''}" onclick="filterByTag(null)">ALL</span>`;
+        allTags.forEach(tag => {
+          cloud.innerHTML += `<span class="tag-badge ${selectedFilterTag === tag ? 'active' : ''}" onclick="filterByTag('${tag}')">#${tag}</span>`;
+        });
+
+        if (filtered.length === 0) {
+          list.innerHTML = `<div style="text-align:center; padding: 20px; font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono';">NO NODES MATCH</div>`;
+          return;
+        }
+
+        filtered.forEach(n => {
+          const card = document.createElement('div');
+          card.className = `note-item-card ${activeNote?.id === n.id ? 'active' : ''}`;
+          card.onclick = () => selectNote(n.id);
+
+          const tagsStr = n.tags.map(t => `#${t}`).join(' ');
+          const wordCount = n.content.split(/\s+/).filter(Boolean).length;
+
+          card.innerHTML = `
+            <div class="note-card-title">${n.title}</div>
+            <div class="note-card-snippet">${n.content.replace(/---[\s\S]*?---/, '').slice(0, 100)}...</div>
+            <div class="note-card-footer">
+              <span>${wordCount} words</span>
+              <span style="color:var(--primary-cyan); font-weight:600;">${tagsStr}</span>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+
+        // Initialize/update Canvas nodes
+        initGraphNodes();
+      }
+
+      function filterByTag(tag) {
+        selectedFilterTag = tag;
+        renderNotesList();
+      }
+
+      function selectNote(id) {
+        const found = notes.find(n => n.id === id);
+        if (found) {
+          activeNote = found;
+          loadNoteToEditor(found);
+          renderNotesList();
+        }
+      }
+
+      function loadNoteToEditor(note) {
+        document.getElementById('editor-title').value = note.title;
+        document.getElementById('editor-tags').value = note.tags.join(', ');
+        document.getElementById('editor-text').value = note.content;
+        
+        // update preview
+        document.getElementById('editor-preview').innerHTML = marked.parse(note.content);
+      }
+
+      function setEditorMode(mode) {
+        editorMode = mode;
+        const text = document.getElementById('editor-text');
+        const preview = document.getElementById('editor-preview');
+        const btnEdit = document.getElementById('edit-mode-btn');
+        const btnPreview = document.getElementById('preview-mode-btn');
+
+        if (mode === 'edit') {
+          text.style.display = 'block';
+          preview.style.display = 'none';
+          btnEdit.classList.add('active');
+          btnPreview.classList.remove('active');
+        } else {
+          text.style.display = 'none';
+          preview.style.display = 'block';
+          btnEdit.classList.remove('active');
+          btnPreview.classList.add('active');
+          
+          // update markdown html
+          preview.innerHTML = marked.parse(text.value);
+        }
+      }
+
+      function createNewNote() {
+        const newNote = {
+          id: '',
+          title: 'New Neural Syllabus',
+          tags: ['memories'],
+          created: new Date().toISOString(),
+          modified: new Date().toISOString(),
+          content: `# New Neural Node\n\nEnter text parameters...`
+        };
+        activeNote = newNote;
+        loadNoteToEditor(newNote);
+        setEditorMode('edit');
+      }
+
+      function saveActiveNote() {
+        const title = document.getElementById('editor-title').value.trim() || 'Untitled Note';
+        const tagsRaw = document.getElementById('editor-tags').value;
+        const tags = tagsRaw.split(',').map(t => t.trim()).filter(t => t.length > 0);
+        const content = document.getElementById('editor-text').value;
+
+        const isNew = !activeNote.id;
+        const id = activeNote.id || `${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}.md`;
+
+        const saved = {
+          id,
+          title,
+          tags,
+          created: isNew ? new Date().toISOString() : (activeNote.created || new Date().toISOString()),
+          modified: new Date().toISOString(),
+          content
+        };
+
+        if (isNew) {
+          notes.push(saved);
+        } else {
+          notes = notes.map(n => n.id === id ? saved : n);
+        }
+
+        localStorage.setItem('jarvis_standalone_notes', JSON.stringify(notes));
+        activeNote = saved;
+
+        renderNotesList();
+        logTelemetryEvent(`Synced notes repository: '${title}'`);
+        
+        confetti({
+          particleCount: 50,
+          spread: 40,
+          origin: { y: 0.8 },
+          colors: ['#00f0ff', '#0072ff']
+        });
+      }
+
+      function deleteActiveNote() {
+        if (!activeNote || !activeNote.id) return;
+
+        if (confirm(`Purge note node '${activeNote.title}' from local vault archives?`)) {
+          notes = notes.filter(n => n.id !== activeNote.id);
+          localStorage.setItem('jarvis_standalone_notes', JSON.stringify(notes));
+          
+          activeNote = notes.length > 0 ? notes[0] : null;
+          if (activeNote) loadNoteToEditor(activeNote);
+          
+          renderNotesList();
+          logTelemetryEvent(`Purged node file from repository: ${activeNote ? activeNote.id : ''}`);
+        }
+      }
+
+      /* ----------------------------------------------------
+         2D CANVAS FORCE-DIRECTED GRAPH PHYSICS
+         ---------------------------------------------------- */
+      function initBrainGraphCanvas() {
+        canvas = document.getElementById('neural-graph-canvas');
+        ctx = canvas.getContext('2d');
+
+        resizeGraphCanvas();
+
+        // Mouse handlers
+        canvas.addEventListener('mousemove', handleGraphMouseMove);
+        canvas.addEventListener('mousedown', handleGraphMouseDown);
+        canvas.addEventListener('mouseup', handleGraphMouseUp);
+
+        // Physics tick
+        requestAnimationFrame(updateGraphPhysics);
+      }
+
+      function resizeGraphCanvas() {
+        if (!canvas) return;
+        const box = canvas.parentElement;
+        canvas.width = box.clientWidth;
+        canvas.height = box.clientHeight;
+      }
+
+      function initGraphNodes() {
+        if (!canvas) return;
+        
+        const width = canvas.width;
+        const height = canvas.height;
+
+        const existingMap = new Map(nodes.map(n => [n.id, n]));
+
+        nodes = notes.map(note => {
+          const existing = existingMap.get(note.id);
+          if (existing) {
+            return {
+              ...existing,
+              title: note.title,
+              tags: note.tags
+            };
+          }
+
+          // Spawn random circle
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 40 + Math.random() * 60;
+          return {
+            id: note.id,
+            title: note.title,
+            tags: note.tags,
+            x: width / 2 + Math.cos(angle) * radius,
+            y: height / 2 + Math.sin(angle) * radius,
+            vx: 0,
+            vy: 0,
+            radius: 8 + (note.tags.length * 1.5),
+            color: note.id === 'welcome-guide.md' ? '#ff7b00' : '#00f0ff'
+          };
+        });
+      }
+
+      function updateGraphPhysics() {
+        if (!canvas || nodes.length === 0) {
+          requestAnimationFrame(updateGraphPhysics);
+          return;
+        }
+
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Force parameters
+        const kRepulsion = 150;
+        const kSpring = 0.05;
+        const kCenter = 0.015;
+        const damping = 0.85;
+
+        // Connections based on shared tags
+        const links = [];
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const shared = nodes[i].tags.some(tag => nodes[j].tags.includes(tag));
+            if (shared) links.push([i, j]);
+          }
+        }
+
+        // Repulsions
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = 0; j < nodes.length; j++) {
+            if (i === j) continue;
+            const dx = nodes[i].x - nodes[j].x;
+            const dy = nodes[i].y - nodes[j].y;
+            const distSq = dx * dx + dy * dy + 0.1;
+            const dist = Math.sqrt(distSq);
+
+            if (dist < 180) {
+              const force = kRepulsion / distSq;
+              nodes[i].vx += (dx / dist) * force;
+              nodes[i].vy += (dy / dist) * force;
+            }
+          }
+        }
+
+        // Spring Pull
+        links.forEach(([i, j]) => {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+          const targetDist = 90;
+          const force = kSpring * (dist - targetDist);
+
+          nodes[i].vx -= (dx / dist) * force;
+          nodes[i].vy -= (dy / dist) * force;
+          nodes[j].vx += (dx / dist) * force;
+          nodes[j].vy += (dy / dist) * force;
+        });
+
+        // Center gravity
+        nodes.forEach(node => {
+          if (node === draggedNode) return;
+
+          const dx = width / 2 - node.x;
+          const dy = height / 2 - node.y;
+          node.vx += dx * kCenter;
+          node.vy += dy * kCenter;
+
+          node.vx *= damping;
+          node.vy *= damping;
+          node.x += node.vx;
+          node.y += node.vy;
+
+          // Keep in bounds
+          node.x = Math.max(node.radius + 5, Math.min(width - node.radius - 5, node.x));
+          node.y = Math.max(node.radius + 5, Math.min(height - node.radius - 5, node.y));
+        });
+
+        if (draggedNode) {
+          draggedNode.x = mousePos.x;
+          draggedNode.y = mousePos.y;
+        }
+
+        // Draw Frame
+        ctx.clearRect(0, 0, width, height);
+
+        // Draw Links
+        ctx.lineWidth = 1;
+        links.forEach(([i, j]) => {
+          ctx.strokeStyle = 'rgba(0, 240, 255, 0.2)';
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.stroke();
+        });
+
+        // Draw Nodes
+        nodes.forEach(node => {
+          const isActive = activeNote?.id === node.id;
+          const isHovered = hoveredNode?.id === node.id;
+
+          ctx.shadowBlur = isActive || isHovered ? 12 : 3;
+          ctx.shadowColor = node.color;
+
+          if (isActive) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius + 5, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(0,240,255,0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+          ctx.fillStyle = isActive ? '#ffffff' : node.color;
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(10,20,38,0.8)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.shadowBlur = 0;
+
+          // Label
+          ctx.fillStyle = isActive ? '#00f0ff' : 'rgba(226,241,248,0.7)';
+          ctx.font = `600 8px 'JetBrains Mono', monospace`;
+          ctx.textAlign = 'center';
+          const titleShort = node.title.length > 12 ? node.title.slice(0, 9) + '...' : node.title;
+          ctx.fillText(titleShort, node.x, node.y + node.radius + 11);
+        });
+
+        requestAnimationFrame(updateGraphPhysics);
+      }
+
+      function handleGraphMouseMove(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        mousePos = { x, y };
+
+        if (draggedNode) return;
+
+        let found = null;
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const n = nodes[i];
+          const dx = n.x - x;
+          const dy = n.y - y;
+          if (Math.sqrt(dx*dx + dy*dy) < n.radius + 8) {
+            found = n;
+            break;
+          }
+        }
+
+        hoveredNode = found;
+        const tooltip = document.getElementById('graph-node-tooltip');
+        
+        if (found) {
+          tooltip.style.display = 'block';
+          tooltip.style.left = `${x + 10}px`;
+          tooltip.style.top = `${y + 10}px`;
+          tooltip.querySelector('.title').innerText = found.title;
+          tooltip.querySelector('.tags').innerText = found.tags.map(t => `#${t}`).join(' ');
+        } else {
+          tooltip.style.display = 'none';
+        }
+      }
+
+      function handleGraphMouseDown() {
+        if (hoveredNode) {
+          draggedNode = hoveredNode;
+        }
+      }
+
+      function handleGraphMouseUp() {
+        if (draggedNode) {
+          selectNote(draggedNode.id);
+          draggedNode = null;
+        }
+      }
+
+      /* ----------------------------------------------------
+         TAB 3: OPERATIONS Checklists & calendar
+         ---------------------------------------------------- */
+      function renderTasks() {
+        const list = document.getElementById('tasks-records-list');
+        const quickList = document.getElementById('quick-tasks-list');
+        list.innerHTML = '';
+        quickList.innerHTML = '';
+
+        if (tasks.length === 0) {
+          list.innerHTML = `<div style="text-align:center; padding: 20px; font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono';">NO OBJECTIVES</div>`;
+          quickList.innerHTML = `<div style="color:var(--text-dark);">STANDBY</div>`;
+          return;
+        }
+
+        tasks.forEach(t => {
+          // main workspace list row
+          const item = document.createElement('div');
+          item.className = 'task-item';
+          
+          item.innerHTML = `
+            <div class="task-left ${t.completed ? 'completed' : ''}" onclick="toggleTaskCompletion('${t.id}')">
+              <i class="fa-regular ${t.completed ? 'fa-square-check' : 'fa-square'}"></i>
+              <span class="task-text">${t.text}</span>
+            </div>
+            <i class="fa-solid fa-trash-can task-delete-btn" onclick="deleteTask('${t.id}')"></i>
+          `;
+          list.appendChild(item);
+
+          // quick summary list row
+          const quickRow = document.createElement('div');
+          quickRow.style.padding = '3px 0';
+          quickRow.style.display = 'flex';
+          quickRow.style.alignItems = 'center';
+          quickRow.style.gap = '6px';
+          quickRow.innerHTML = `
+            <i class="fa-regular ${t.completed ? 'fa-square-check' : 'fa-square'}" style="color:${t.completed ? 'var(--success-green)' : 'var(--primary-cyan)'};"></i>
+            <span style="text-decoration:${t.completed ? 'line-through' : 'none'}; opacity:${t.completed ? 0.5 : 1}; truncate">${t.text}</span>
+          `;
+          quickList.appendChild(quickRow);
+        });
+      }
+
+      function addNewTask(e) {
+        e.preventDefault();
+        const input = document.getElementById('task-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const newTask = {
+          id: Date.now().toString(),
+          text,
+          completed: false
+        };
+
+        tasks.push(newTask);
+        localStorage.setItem('jarvis_standalone_tasks', JSON.stringify(tasks));
+        
+        input.value = '';
+        renderTasks();
+        logTelemetryEvent(`Task added: "${text}"`);
+      }
+
+      function toggleTaskCompletion(id) {
+        tasks = tasks.map(t => {
+          if (t.id === id) {
+            const nextVal = !t.completed;
+            if (nextVal) {
+              // check if all tasks completed
+              const finishedAll = tasks.filter(x => x.id !== id).every(x => x.completed);
+              if (finishedAll) {
+                confetti({
+                  particleCount: 120,
+                  spread: 80,
+                  origin: { y: 0.6 },
+                  colors: ['#00f0ff', '#0072ff', '#ff7b00']
+                });
+                logTelemetryEvent("SUCCESS: All active objectives completed!");
+              }
+            }
+            return { ...t, completed: nextVal };
+          }
+          return t;
+        });
+
+        localStorage.setItem('jarvis_standalone_tasks', JSON.stringify(tasks));
+        renderTasks();
+      }
+
+      function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        localStorage.setItem('jarvis_standalone_tasks', JSON.stringify(tasks));
+        renderTasks();
+        logTelemetryEvent("Objective erased from matrix.");
+      }
+
+      // Calendar scheduler events
+      function renderCalendar() {
+        const list = document.getElementById('calendar-events-list');
+        list.innerHTML = '';
+
+        if (calendarEvents.length === 0) {
+          list.innerHTML = `<div style="text-align:center; padding: 20px; font-size:10px; color:var(--text-dim); font-family:'JetBrains Mono';">NO SCHEDULED EVENTS</div>`;
+          return;
+        }
+
+        calendarEvents.forEach(ev => {
+          const card = document.createElement('div');
+          card.className = 'calendar-item';
+          card.innerHTML = `
+            <div class="calendar-item-left">
+              <div class="cal-date">${ev.date}</div>
+              <div class="cal-time">${ev.time}</div>
+            </div>
+            <div class="calendar-item-right">
+              <div>
+                <div class="cal-title">${ev.title}</div>
+                <div class="cal-desc">${ev.description}</div>
+              </div>
+              <div class="cal-actions">
+                <button class="cyber-button py-1 px-2.5" onclick="deleteCalendarEvent('${ev.id}')" style="font-size:8px; background:transparent;"><i class="fa-solid fa-calendar-minus"></i> REMOVE</button>
+              </div>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+
+      function addCalendarEvent(e) {
+        e.preventDefault();
+        const title = document.getElementById('event-title').value.trim();
+        const date = document.getElementById('event-date').value;
+        const time = document.getElementById('event-time').value || '00:00';
+        const desc = document.getElementById('event-desc').value.trim() || 'No description.';
+
+        const newEv = {
+          id: Date.now().toString(),
+          title,
+          date,
+          time,
+          description: desc
+        };
+
+        calendarEvents.push(newEv);
+        // sort by date chronological
+        calendarEvents.sort((a,b) => a.date.localeCompare(b.date));
+
+        localStorage.setItem('jarvis_standalone_calendar', JSON.stringify(calendarEvents));
+
+        document.getElementById('event-title').value = '';
+        document.getElementById('event-date').value = '';
+        document.getElementById('event-time').value = '';
+        document.getElementById('event-desc').value = '';
+
+        renderCalendar();
+        logTelemetryEvent(`Calendar item scheduled: "${title}" on ${date}`);
+      }
+
+      function deleteCalendarEvent(id) {
+        calendarEvents = calendarEvents.filter(ev => ev.id !== id);
+        localStorage.setItem('jarvis_standalone_calendar', JSON.stringify(calendarEvents));
+        renderCalendar();
+        logTelemetryEvent("Event cleared from timeline.");
+      }
+
+      /* ----------------------------------------------------
+         TAB 4: INTEGRATION HUB WEBHOOKS
+         ---------------------------------------------------- */
+      function toggleIntegration(key) {
+        settings.integrations[key] = !settings.integrations[key];
+        localStorage.setItem('jarvis_standalone_settings', JSON.stringify(settings));
+        
+        updateIntegrationHubUI();
+        
+        const status = settings.integrations[key] ? 'LINKED' : 'OFFLINE';
+        logTelemetryEvent(`[INTEGRATION] ${key.toUpperCase()} integration: ${status}`);
+      }
+
+      function updateIntegrationHubUI() {
+        const integrationsList = ['slack', 'github', 'notion', 'gmail', 'gcal'];
+        integrationsList.forEach(key => {
+          const btn = document.getElementById(`link-${key}`);
+          if (btn) {
+            const isConnected = settings.integrations[key];
+            if (isConnected) {
+              btn.classList.add('active');
+              btn.classList.remove('accent');
+              btn.innerText = 'LINKED';
+            } else {
+              btn.classList.remove('active');
+              btn.classList.add('accent');
+              btn.innerText = 'OFFLINE';
+            }
+          }
+        });
+
+        // Add mock sync log
+        const container = document.getElementById('integration-logs-container');
+        container.innerHTML = `<div style="text-align:center; padding:15px; color:var(--text-dim);">Listening for webhook events...</div>`;
+        
+        // Populate logs
+        const mockEvents = [
+          `Synced notion calendars updates.`,
+          `Fetched commits from Git repositories.`,
+          `Configured slack webhooks listening port.`,
+          `Refreshed background OAuth protocols.`,
+          `Imported agenda schedules from google servers.`
+        ];
+        
+        container.innerHTML = '';
+        mockEvents.forEach(ev => {
+          const logRow = document.createElement('div');
+          logRow.innerText = `[${new Date().toLocaleTimeString()}] ${ev}`;
+          container.appendChild(logRow);
+        });
+      }
+
+      /* ----------------------------------------------------
+         TAB 5: ANALYSIS DESK (CSV & SQL)
+         ---------------------------------------------------- */
+      function processCsvAnalysis() {
+        const raw = document.getElementById('csv-input-area').value;
+        const box = document.getElementById('csv-data-table-box');
+        const svg = document.getElementById('analytic-chart-svg');
+
+        try {
+          const lines = raw.trim().split('\n');
+          if (lines.length < 2) return;
+
+          const headers = lines[0].split(',');
+          const rows = lines.slice(1).map(line => {
+            const values = line.split(',');
+            const obj = {};
+            headers.forEach((h, idx) => {
+              obj[h.trim()] = values[idx] ? values[idx].trim() : '';
+            });
+            return obj;
+          });
+
+          // Draw table
+          let tableHtml = `<table><thead><tr>`;
+          headers.forEach(h => {
+            tableHtml += `<th>${h.trim()}</th>`;
+          });
+          tableHtml += `</tr></thead><tbody>`;
+          
+          rows.forEach(row => {
+            tableHtml += `<tr>`;
+            Object.values(row).forEach(val => {
+              tableHtml += `<td>${val}</td>`;
+            });
+            tableHtml += `</tr>`;
+          });
+          tableHtml += `</tbody></table>`;
+          box.innerHTML = tableHtml;
+
+          // Draw SVG Chart
+          svg.innerHTML = '';
+          
+          // Axis Lines
+          const axisX = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          axisX.setAttribute("x1", "30"); axisX.setAttribute("y1", "130");
+          axisX.setAttribute("x2", "450"); axisX.setAttribute("y2", "130");
+          axisX.setAttribute("stroke", "rgba(0, 240, 255, 0.3)");
+          svg.appendChild(axisX);
+
+          const axisY = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          axisY.setAttribute("x1", "30"); axisY.setAttribute("y1", "10");
+          axisY.setAttribute("x2", "30"); axisY.setAttribute("y2", "130");
+          axisY.setAttribute("stroke", "rgba(0, 240, 255, 0.3)");
+          svg.appendChild(axisY);
+
+          // Get numeric value keys
+          const valKey = headers[1]?.trim();
+          const labelKey = headers[0]?.trim();
+
+          if (rows.length > 0 && valKey) {
+            rows.forEach((row, idx) => {
+              const label = row[labelKey] || '';
+              const val = parseFloat(row[valKey]) || 0;
+
+              // scale based on 3000 max
+              const barHeight = Math.min(100, (val / 3000) * 100);
+              const xPos = 50 + idx * 75;
+
+              // Bar Rect
+              const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+              rect.setAttribute("x", xPos);
+              rect.setAttribute("y", 130 - barHeight);
+              rect.setAttribute("width", "25");
+              rect.setAttribute("height", barHeight);
+              rect.setAttribute("fill", "rgba(0, 240, 255, 0.5)");
+              rect.setAttribute("stroke", "#00f0ff");
+              rect.setAttribute("stroke-width", "0.5");
+              svg.appendChild(rect);
+
+              // Val Text
+              const valText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+              valText.setAttribute("x", xPos - 3);
+              valText.setAttribute("y", 125 - barHeight);
+              valText.setAttribute("fill", "#00f0ff");
+              valText.setAttribute("font-size", "7.5");
+              valText.textContent = `$${val}`;
+              svg.appendChild(valText);
+
+              // Label Text
+              const labelText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+              labelText.setAttribute("x", xPos + 2);
+              labelText.setAttribute("y", "142");
+              labelText.setAttribute("fill", "rgba(226, 241, 248, 0.6)");
+              labelText.setAttribute("font-size", "8");
+              labelText.textContent = label;
+              svg.appendChild(labelText);
+            });
+          }
+
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // SQL generator
+      function runSqlGenerator(e) {
+        e.preventDefault();
+        const input = document.getElementById('sql-prompt-input').value.toLowerCase().trim();
+        const box = document.getElementById('sql-output-box');
+
+        if (input.includes('expense') && input.includes('1200')) {
+          box.innerText = `SELECT * FROM dataset WHERE Expenses > 1200;\n\nResult output:\n- Feb: 1500\n- Apr: 1800\n- May: 2100`;
+        } else if (input.includes('tasks') || input.includes('done')) {
+          box.innerText = `SELECT Month, TasksDone FROM dataset;\n\nResult output:\n- Jan: 28\n- Feb: 32\n- Mar: 40\n- Apr: 38\n- May: 50`;
+        } else {
+          box.innerText = `SELECT * FROM dataset WHERE LOWER(description) LIKE '%${input}%';\n\nResult:\nEmpty set (0.00 sec)`;
+        }
+      }
+
+      /* ----------------------------------------------------
+         TAB 6: CORE SETTINGS (PRESETS CORES)
+         ---------------------------------------------------- */
+      function saveCoreSettings() {
+        const username = document.getElementById('settings-username').value.trim() || 'Sir';
+        const model = document.getElementById('settings-model').value;
+        const apikey = document.getElementById('settings-apikey').value.trim();
+        const voice = document.getElementById('settings-voice-feedback').checked;
+
+        settings.username = username;
+        settings.defaultModel = model;
+        settings.geminiApiKey = apikey;
+        settings.voiceEnabled = voice;
+
+        localStorage.setItem('jarvis_standalone_settings', JSON.stringify(settings));
+        
+        logTelemetryEvent(`System settings synchronized: model preset to ${model}`);
+        alert("Parameters successfully updated in core storage grids, sir.");
+      }
+
+      function toggleVoiceSettingsCheckbox() {
+        const box = document.getElementById('settings-voice-feedback');
+        box.checked = !box.checked;
+      }
+
+      function wipeSyncHistory() {
+        if (confirm("Sir, are you certain you wish to wipe my memory logs? This cleans localStorage cache data.")) {
+          localStorage.removeItem('jarvis_standalone_history');
+          chatHistory = [];
+          renderChatTimeline();
+          logTelemetryEvent("System alert: Synapse database cleared.");
+        }
+      }
+    </script>
+  </body>
+</html>
